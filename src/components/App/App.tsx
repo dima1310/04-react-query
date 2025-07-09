@@ -1,41 +1,33 @@
 import { useState } from "react";
-import styles from "./App.module.css";
+import { useQuery } from "@tanstack/react-query";
+import Pagination from "../Pagination/Pagination";
+import styles from "../App/App.module.css";
 import toast, { Toaster } from "react-hot-toast";
-
 import SearchBar from "../SearchBar/SearchBar";
 import MovieGrid from "../MovieGrid/MovieGrid";
 import MovieModal from "../MovieModal/MovieModal";
-import Loader from "../Loader/Loader";
-import ErrorMessage from "../ErrorMessage/ErrorMessage";
-
 import { fetchMovies } from "../../services/movieService";
-import type { Movie } from "../../types/movie";
+import type { Movie, MoviesResponse } from "../../types/movie";
 
 const App = () => {
-  const [movies, setMovies] = useState<Movie[]>([]);
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(false);
 
-  const handleSearch = async (query: string) => {
-    setMovies([]);
-    setError(false);
-    setIsLoading(true);
+  const { data, isLoading, error } = useQuery<MoviesResponse, Error>({
+    queryKey: ["movies", query, page],
+    queryFn: () => fetchMovies(query, page),
+    enabled: query.length > 0,
+  });
 
-    try {
-      const results = await fetchMovies(query);
+  // Обработка ошибки
+  if (error) {
+    toast.error("Не удалось загрузить фильмы. Попробуйте снова.");
+  }
 
-      if (results.length === 0) {
-        toast("No movies found for your request.");
-      }
-
-      setMovies(results);
-    } catch {
-      setError(true);
-      toast.error("Failed to fetch movies. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
+  const handleSearch = (newQuery: string) => {
+    setQuery(newQuery);
+    setPage(1);
   };
 
   const handleSelectMovie = (movie: Movie) => {
@@ -51,11 +43,26 @@ const App = () => {
       <Toaster position="top-right" />
       <SearchBar onSubmit={handleSearch} />
 
-      {isLoading && <Loader />}
-      {error && <ErrorMessage />}
-      {!isLoading && !error && movies.length > 0 && (
-        <MovieGrid movies={movies} onSelect={handleSelectMovie} />
+      {isLoading && <p>Загрузка...</p>}
+      {error && <p>Произошла ошибка...</p>}
+
+      {data && data.results && data.results.length > 0 && (
+        <>
+          <MovieGrid movies={data.results} onSelect={handleSelectMovie} />
+          {data.total_pages > 1 && (
+            <Pagination
+              totalPages={data.total_pages}
+              currentPage={page}
+              onPageChange={setPage}
+            />
+          )}
+        </>
       )}
+
+      {data &&
+        data.results &&
+        data.results.length === 0 &&
+        query.length > 0 && <p>Фильмы не найдены. Попробуйте другой запрос.</p>}
 
       {selectedMovie && (
         <MovieModal movie={selectedMovie} onClose={handleCloseModal} />
