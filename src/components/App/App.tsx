@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import Pagination from "../Pagination/Pagination";
+import Pagination from "../ErrorMessage/Pagination";
 import styles from "../App/App.module.css";
 import toast, { Toaster } from "react-hot-toast";
 import SearchBar from "../SearchBar/SearchBar";
