@@ -2,6 +2,8 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "../src/components/App/App";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import "./index.css";
+import "modern-normalize/modern-normalize.css";
 
 const queryClient = new QueryClient();
 
